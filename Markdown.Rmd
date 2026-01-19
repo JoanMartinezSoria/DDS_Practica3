@@ -15,11 +15,17 @@ knitr::opts_chunk$set(echo = TRUE)
 #install.packages("dplyr")
 #install.packages("tidyr")
 #install.packages("lubridate")
+#install.packages("mltools")
+#install.packages("data.table")
+#install.packages("ggplot2")
 
 library("readr")
 library("dplyr")
 library("tidyr")
 library("lubridate")
+library("mltools")
+library("data.table")
+library("ggplot2")
 ```
 
 ## Obtención y carga de los Datos:
@@ -37,9 +43,9 @@ df <- read_log("epa-http.csv", col_names = columnas) %>%
   mutate(BytesReply = replace_na(BytesReply, 0)) %>% 
   mutate(Timestamp = strptime(Timestamp, format = "%d:%H:%M:%S")) %>%
   mutate(
-    Metodo = str_split(Peticion, " ", simplify = TRUE)[,1],
-    URL = str_split(Peticion, " ", simplify = TRUE)[,2],
-    Version_proto = str_split(Peticion, " ", simplify = TRUE)[,3],
+    Metodo = as.factor(str_split(Peticion, " ", simplify = TRUE)[,1]),
+    URL = as.factor(str_split(Peticion, " ", simplify = TRUE)[,2]),
+    Version_proto = as.factor(str_split(Peticion, " ", simplify = TRUE)[,3]),
   )
 
 head(df, 10)
@@ -63,4 +69,46 @@ Esta nos muestra la siguiente información de nuestro *dataframe*.
     -   CodigoRespuesta (double)
     -   BytesReply (double)
 
+## Clústering de datos
+#### Utilizando un algoritmo de aprendizaje no supervisado, realizad un análisis de clústering con k-means para los datos del servidor. 
+
+```{r}
+df <- df %>% 
+  mutate(Sum_char_peticion = nchar(Peticion), Sum_char_ip = nchar(IP)) %>%
+  mutate(Timestamp = as.POSIXct(Timestamp))
+
+df$URL <- NULL
+
+epa_http_one_hot <- one_hot(as.data.table(df), sparsifyNAs = TRUE)
+
+epa_http_one_hot$IP <- NULL
+epa_http_one_hot$Timestamp <- NULL
+epa_http_one_hot$Peticion <- NULL
+```
+
+```{r}
+num_cluster <- 2
+result <- kmeans(epa_http_one_hot, centers = num_cluster, nstart = 25)
+result_no_na <- kmeans(na.omit(epa_http_one_hot), centers = num_cluster)
+
+#num_cluster <- 3
+#result <- kmeans(epa_http_one_hot, centers = num_cluster, nstart = 25)
+#result_no_na <- kmeans(na.omit(epa_http_one_hot), centers = num_cluster)
+
+#num_cluster <- 4
+#result <- kmeans(epa_http_one_hot, centers = num_cluster, nstart = 25)
+#result_no_na <- kmeans(na.omit(epa_http_one_hot), centers = num_cluster)
+```
+
+```{r}
+ggplot(epa_http_one_hot, aes(x = BytesReply, y = Sum_char_ip, color = Cluster)) +
+  geom_point(alpha = 0.5) +   
+  theme_minimal() +
+  labs(
+    title = paste("Resultado K-Means con k =", num_cluster),
+    x = "Bytes Servidos",
+    y = "Longitud de la IP",
+    color = "Cluster"
+  )
+```
 

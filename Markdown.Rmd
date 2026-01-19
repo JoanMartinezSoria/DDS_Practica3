@@ -1,0 +1,66 @@
+---
+title: "Actividad Evaluable 1"
+output: pdf_document
+date: "2026-01-19"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Análisis de logs de servidor usando R (parte II)
+
+```{r}
+#install.packages("readr")
+#install.packages("dplyr")
+#install.packages("tidyr")
+#install.packages("lubridate")
+
+library("readr")
+library("dplyr")
+library("tidyr")
+library("lubridate")
+```
+
+## Obtención y carga de los Datos:
+
+#### Descomprimir el fichero comprimido que contiene los registros del servidor, y a partir de los datos extraídos, cargar en data frame los registros con las peticiones servidas.
+
+```{r}
+zip <- "./epa-http.zip"
+unzip(zipfile = zip)
+```
+
+```{r}
+columnas <- c("IP", "Timestamp", "Peticion", "CodigoRespuesta", "BytesReply")
+df <- read_log("epa-http.csv", col_names = columnas) %>%
+  mutate(BytesReply = replace_na(BytesReply, 0)) %>% 
+  mutate(Timestamp = strptime(Timestamp, format = "%d:%H:%M:%S")) %>%
+  mutate(
+    Metodo = str_split(Peticion, " ", simplify = TRUE)[,1],
+    URL = str_split(Peticion, " ", simplify = TRUE)[,2],
+    Version_proto = str_split(Peticion, " ", simplify = TRUE)[,3],
+  )
+
+head(df, 10)
+```
+
+#### Incluid en el documento un apartado con la descripción de los datos analizados: fuente, tipología, descripción de la información contenida (los diferentes campos) y sus valores.
+
+Para tener una primera vision de los datos que hemos cargado y con los que vamos a trabajar, podemos usar la funcion *glimpse()*.
+
+```{r}
+glimpse(df)
+```
+
+Esta nos muestra la siguiente información de nuestro *dataframe*.
+
+-   En total nuestro dataframe cuenta con 47,748 columnas.
+-   Contamos con 5 columans distintas con el siguiente contenido y tipo de dato:
+    -   IP (character –\> String)
+    -   Timestamp (dttm –\> POSIXlt –\> Date)
+    -   Peticion (character –\> String)
+    -   CodigoRespuesta (double)
+    -   BytesReply (double)
+
+

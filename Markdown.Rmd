@@ -71,6 +71,46 @@ Esta nos muestra la siguiente información de nuestro *dataframe*.
     -   CodigoRespuesta (double)
     -   BytesReply (double)
 
+## Limpieza de los Datos
+#### Aprovechando que los datos a analizar son los mismos de la primera práctica, para esta entrega es imprescindible que los datos estén en formato de “datos elegantes”.
+
+## Exploración de Datos
+#### Identificar el número único de usuarios que han interactuado directamente con el servidor de forma segregada según si los usuarios han tenido algún tipo de error en las distintas peticiones ofrecidas por el servidor.
+
+```{r}
+usuarios_con_fallos <- df %>% 
+  filter(CodigoRespuesta >= 400) %>%  
+  distinct(IP) %>%                    
+  nrow()
+
+total_usuarios <- length(unique(df$IP))
+
+usuarios_sin_fallos <- total_usuarios - usuarios_con_fallos
+
+Fallos <- df %>%
+  filter(CodigoRespuesta >= 400) %>%  
+  distinct(CodigoRespuesta)
+  
+total_usuarios
+usuarios_con_fallos
+usuarios_sin_fallos
+
+Fallos
+```
+```{r}
+usuarios_fallos <- data.frame(
+  Valor = c("Sin Fallos", "Con Fallos"),
+  Cantidad = c(usuarios_sin_fallos, usuarios_con_fallos)
+)
+
+ggplot(usuarios_fallos, aes(x=Valor, y=Cantidad, fill=Valor)) +
+  geom_col() + 
+  scale_fill_manual(values = c("red", "blue") ) +
+  theme_bw() +
+  theme(legend.position="none")
+```
+
+
 ## Clústering de datos
 #### Utilizando un algoritmo de aprendizaje no supervisado, realizad un análisis de clústering con k-means para los datos del servidor. 
 
@@ -86,6 +126,14 @@ epa_http_one_hot <- one_hot(as.data.table(df), sparsifyNAs = TRUE)
 epa_http_one_hot$IP <- NULL
 epa_http_one_hot$Timestamp <- NULL
 epa_http_one_hot$Peticion <- NULL
+```
+
+```{r}
+clusters_h <- hclust(dist(df))
+```
+
+```{r}
+plot(clusters_h)
 ```
 
 ```{r}
@@ -105,14 +153,40 @@ result_no_na <- kmeans(na.omit(epa_http_one_hot), centers = num_cluster)
 ```{r}
 Colors = as.factor(result$cluster)
 
-ggplot(epa_http_one_hot, aes(x = BytesReply, y = Sum_char_ip, color = Colors)) +
+ggplot(epa_http_one_hot, aes(x = Sum_char_ip, y = BytesReply, color = Colors)) +
   geom_point(alpha = 0.5) +   
   theme_minimal() +
   labs(
     title = paste("Resultado K-Means con k =", num_cluster),
-    x = "Bytes Servidos",
-    y = "Longitud de la IP",
+    x = "Sum_char_ip",
+    y = "BytesReply",
     color = "Cluster"
   )
+```
+
+```{r}
+# Variables continuas principales (ajusta nombres según tus columnas reales)
+vars_interesantes <- c("BytesReply", "Sum_char_ip", "Sum_char_peticion", "CodigoRespuesta")
+todas_vars <- names(epa_http_one_hot)
+
+# Loop anidado manual
+for (var_x in vars_interesantes) {
+  for (var_y in todas_vars) {
+    
+    # Evitamos comparar una variable consigo misma
+    if (var_x != var_y) {
+      
+      p <- ggplot(epa_http_one_hot, aes(x = .data[[var_x]], y = .data[[var_y]], color = as.factor(result$cluster))) +
+        geom_point(alpha = 0.5) +
+        theme_minimal() +
+        labs(title = paste(var_x, "vs", var_y))
+      
+      print(p)
+      
+      # Pausa pequeña para que a R le de tiempo a renderizar si lo ves en pantalla
+      Sys.sleep(0.1) 
+    }
+  }
+}
 ```
 

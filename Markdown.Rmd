@@ -18,6 +18,7 @@ knitr::opts_chunk$set(echo = TRUE)
 #install.packages("mltools")
 #install.packages("data.table")
 #install.packages("ggplot2")
+#install.packages("stringr")
 
 library("readr")
 library("dplyr")
@@ -26,6 +27,7 @@ library("lubridate")
 library("mltools")
 library("data.table")
 library("ggplot2")
+library("stringr")
 ```
 
 ## Obtención y carga de los Datos:
@@ -87,13 +89,13 @@ epa_http_one_hot$Peticion <- NULL
 ```
 
 ```{r}
-num_cluster <- 2
-result <- kmeans(epa_http_one_hot, centers = num_cluster, nstart = 25)
-result_no_na <- kmeans(na.omit(epa_http_one_hot), centers = num_cluster)
-
-#num_cluster <- 3
+#num_cluster <- 2
 #result <- kmeans(epa_http_one_hot, centers = num_cluster, nstart = 25)
 #result_no_na <- kmeans(na.omit(epa_http_one_hot), centers = num_cluster)
+
+num_cluster <- 3
+result <- kmeans(epa_http_one_hot, centers = num_cluster, nstart = 25)
+result_no_na <- kmeans(na.omit(epa_http_one_hot), centers = num_cluster)
 
 #num_cluster <- 4
 #result <- kmeans(epa_http_one_hot, centers = num_cluster, nstart = 25)
@@ -101,7 +103,9 @@ result_no_na <- kmeans(na.omit(epa_http_one_hot), centers = num_cluster)
 ```
 
 ```{r}
-ggplot(epa_http_one_hot, aes(x = BytesReply, y = Sum_char_ip, color = Cluster)) +
+Colors = as.factor(result$cluster)
+
+ggplot(epa_http_one_hot, aes(x = BytesReply, y = Sum_char_ip, color = Colors)) +
   geom_point(alpha = 0.5) +   
   theme_minimal() +
   labs(

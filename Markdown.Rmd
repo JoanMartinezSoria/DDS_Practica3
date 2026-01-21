@@ -123,26 +123,39 @@ tabla_freq
 datos_pie <- as.data.frame(tabla_freq)
 
 datos_pie <- datos_pie %>%
-  # Convertimos los nombres de fila (las categorías) en una columna real
   mutate(Categoria = rownames(.)) %>%
-  # ¡IMPORTANTE!: Eliminamos la fila que dice "Total" para no duplicar datos
   filter(Categoria != "Total") %>%
-  # Opcional: Si quieres quitar los NAs (summarytools suele incluir <NA>)
-  # filter(!is.na(Categoria) & Categoria != "<NA>") %>% 
-  mutate(
-    # summarytools usa la columna 'Freq' para el conteo
-    Porcentaje = Freq / sum(Freq) * 100,
-    # Creamos la etiqueta de texto
-    Etiqueta = paste0(round(Porcentaje, 1), "%"),
-    # Calculamos la posición para que el texto quede centrado en cada sector
-    y_pos = cumsum(Porcentaje) - 0.5 * Porcentaje
-  )
+  filter(!is.na(Categoria) & Categoria != "<NA>")
 
-# 3. CREAR EL GRÁFICO (PIE CHART)
-ggplot(datos_pie, aes(x = "", y = Porcentaje, fill = Categoria)) +
+
+ggplot(datos_pie, aes(x = "", y = Freq, fill = Categoria)) +
   geom_bar(stat = "identity", width = 1, color = "white") +
   coord_polar("y", start = 0) +
-  geom_text(aes(y = y_pos, label = Etiqueta), color = "white", fontface = "bold") +
+  theme_void() +
+  labs(title = "Distribución de Métodos", fill = "Método")
+```
+
+```{r}
+patron_imagenes <- "(?i)\\.(gif|jpg|jpeg|png|ico|bmp|svg)$"
+df_imagenes <- df %>%
+  filter(str_detect(URL, patron_imagenes))
+tabla_freq_img <- freq(df_imagenes$Metodo, report.nas = FALSE)
+tabla_freq_img
+
+```
+
+```{r}
+datos_pie <- as.data.frame(tabla_freq_img)
+
+datos_pie <- datos_pie %>%
+  mutate(Categoria = rownames(.)) %>%
+  filter(Categoria != "Total") %>%
+  filter(!is.na(Categoria) & Categoria != "<NA>")
+
+
+ggplot(datos_pie, aes(x = "", y = Freq, fill = Categoria)) +
+  geom_bar(stat = "identity", width = 1, color = "white") +
+  coord_polar("y", start = 0) +
   theme_void() +
   labs(title = "Distribución de Métodos", fill = "Método")
 ```

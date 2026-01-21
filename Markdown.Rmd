@@ -19,6 +19,7 @@ knitr::opts_chunk$set(echo = TRUE)
 #install.packages("data.table")
 #install.packages("ggplot2")
 #install.packages("stringr")
+#install.packages("summarytools")
 
 library("readr")
 library("dplyr")
@@ -28,6 +29,7 @@ library("mltools")
 library("data.table")
 library("ggplot2")
 library("stringr")
+library("summarytools")
 ```
 
 ## Obtención y carga de los Datos:
@@ -110,6 +112,41 @@ ggplot(usuarios_fallos, aes(x=Valor, y=Cantidad, fill=Valor)) +
   theme(legend.position="none")
 ```
 
+## Análisis de Datos
+#### Analizar los distintos tipos de peticiones HTTP (GET, POST, PUT, DELETE) gestionadas por el servidor, identificando la frecuencia de cada una de estas. Repetir el análisis, esta vez filtrando previamente aquellas peticiones correspondientes a recursos ofrecidos de tipo imagen. 
+
+```{r}
+tabla_freq <- freq(df$Metodo, report.nas = FALSE)
+tabla_freq
+```
+```{r}
+datos_pie <- as.data.frame(tabla_freq)
+
+datos_pie <- datos_pie %>%
+  # Convertimos los nombres de fila (las categorías) en una columna real
+  mutate(Categoria = rownames(.)) %>%
+  # ¡IMPORTANTE!: Eliminamos la fila que dice "Total" para no duplicar datos
+  filter(Categoria != "Total") %>%
+  # Opcional: Si quieres quitar los NAs (summarytools suele incluir <NA>)
+  # filter(!is.na(Categoria) & Categoria != "<NA>") %>% 
+  mutate(
+    # summarytools usa la columna 'Freq' para el conteo
+    Porcentaje = Freq / sum(Freq) * 100,
+    # Creamos la etiqueta de texto
+    Etiqueta = paste0(round(Porcentaje, 1), "%"),
+    # Calculamos la posición para que el texto quede centrado en cada sector
+    y_pos = cumsum(Porcentaje) - 0.5 * Porcentaje
+  )
+
+# 3. CREAR EL GRÁFICO (PIE CHART)
+ggplot(datos_pie, aes(x = "", y = Porcentaje, fill = Categoria)) +
+  geom_bar(stat = "identity", width = 1, color = "white") +
+  coord_polar("y", start = 0) +
+  geom_text(aes(y = y_pos, label = Etiqueta), color = "white", fontface = "bold") +
+  theme_void() +
+  labs(title = "Distribución de Métodos", fill = "Método")
+```
+
 
 ## Clústering de datos
 #### Utilizando un algoritmo de aprendizaje no supervisado, realizad un análisis de clústering con k-means para los datos del servidor. 
@@ -129,7 +166,7 @@ epa_http_one_hot$Peticion <- NULL
 ```
 
 ```{r}
-clusters_h <- hclust(dist(df))
+#clusters_h <- hclust(dist(df))
 ```
 
 ```{r}

@@ -45,7 +45,7 @@ unzip(zipfile = zip)
 columnas <- c("IP", "Timestamp", "Peticion", "CodigoRespuesta", "BytesReply")
 df <- read_log("epa-http.csv", col_names = columnas) %>%
   mutate(BytesReply = replace_na(BytesReply, 0)) %>% 
-  mutate(Timestamp = strptime(Timestamp, format = "%d:%H:%M:%S")) %>%
+  mutate(Timestamp = as.POSIXct(strptime(Timestamp, format = "%d:%H:%M:%S"))) %>%
   mutate(
     Metodo = as.factor(str_split(Peticion, " ", simplify = TRUE)[,1]),
     URL = as.factor(str_split(Peticion, " ", simplify = TRUE)[,2]),
@@ -159,6 +159,77 @@ ggplot(datos_pie, aes(x = "", y = Freq, fill = Categoria)) +
   theme_void() +
   labs(title = "Distribución de Métodos", fill = "Método")
 ```
+## Visualización de Resultados 
+#### Generar al menos 2 gráficos distintos que permitan visualizar alguna característica relevante de los datos analizados.  
+
+```{r fig.width=12, fig.height=6}
+top_urls <- df %>%
+  count(URL) %>%              
+  arrange(desc(n)) %>%     
+  slice_head(n = 10)%>%
+  mutate(URL = as.character(URL))
+
+ggplot(top_urls, aes(x = reorder(str_trunc(URL, 40), n), y = n)) +
+  geom_col(fill = "#2E86C1") +
+  coord_flip() + 
+  theme_minimal() +
+  labs(
+    title = "Top 10 Recursos más solicitados",
+    x = "Recurso (URL)",
+    y = "Número de Peticiones"
+  ) +
+  geom_text(aes(label = n), hjust = -0.1, size = 3.5)
+```
+```{r fig.width=12, fig.height=6}
+top_ips <- df %>%
+  count(IP) %>%                 
+  arrange(desc(n)) %>%          
+  slice_head(n = 10)        
+
+# 2. Generar el Gráfico
+ggplot(top_ips, aes(x = reorder(IP, n), y = n)) +
+  geom_col(fill = "#E67E22") +  
+  coord_flip() +               
+  theme_minimal() +
+  labs(
+    title = "Top 10 Usuarios más Activos (IPs)",
+    subtitle = "Identificación de posibles bots o proxies con alto tráfico",
+    x = "Dirección IP (Usuario)",
+    y = "Número de Peticiones"
+  ) +
+  geom_text(aes(label = n), hjust = -0.1, size = 3.5, fontface = "bold")
+```
+
+#### Generar un gráfico que permita visualizar el número de peticiones servidas a lo largo del tiempo.
+```{r}
+peticiones_por_tiempo <- df %>%
+  mutate(Hora = floor_date(Timestamp, unit = "hour")) %>% 
+  count(Hora)
+
+ggplot(peticiones_por_tiempo, aes(x = Hora, y = n)) +
+  geom_line(color = "#0073C2", linewidth = 1) + 
+  geom_point(color = "#0073C2", size = 2) +
+  theme_minimal() +
+  labs(
+    title = "Evolución del Tráfico del Servidor",
+    subtitle = "Número de peticiones servidas por hora",
+    x = "Hora del día",
+    y = "Total de Peticiones"
+  ) +
+  scale_x_datetime(date_labels = "%d %b %H:00", date_breaks = "4 hours")
+```
+```{r}
+ggplot(df, aes(x = Timestamp)) +
+  geom_histogram(binwidth = 3600, fill = "#0073C2", color = "white") + 
+  theme_minimal() +
+  labs(
+    title = "Volumen de Peticiones por Hora (Histograma)",
+    subtitle = "Frecuencia de peticiones agrupadas en intervalos de 1 hora",
+    x = "Hora del día",
+    y = "Número de Peticiones"
+  ) +
+  scale_x_datetime(date_labels = "%d %b %H:00", date_breaks = "4 hours")
+```
 
 
 ## Clústering de datos
@@ -166,8 +237,7 @@ ggplot(datos_pie, aes(x = "", y = Freq, fill = Categoria)) +
 
 ```{r}
 df <- df %>% 
-  mutate(Sum_char_peticion = nchar(Peticion), Sum_char_ip = nchar(IP)) %>%
-  mutate(Timestamp = as.POSIXct(Timestamp))
+  mutate(Sum_char_peticion = nchar(Peticion), Sum_char_ip = nchar(IP))
 
 df$URL <- NULL
 
@@ -183,7 +253,7 @@ epa_http_one_hot$Peticion <- NULL
 ```
 
 ```{r}
-plot(clusters_h)
+#plot(clusters_h)
 ```
 
 ```{r}

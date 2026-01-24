@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Análisis de logs de servidor usando R (parte II)
 
-Aquí encontramos las librerias usadas para la realización de la Actividad.
+Aquí encontramos las librerías usadas para la realización de la Actividad.
 
 ```{r}
 #install.packages("readr")
@@ -21,7 +21,7 @@ Aquí encontramos las librerias usadas para la realización de la Actividad.
 #install.packages("data.table")
 #install.packages("ggplot2")
 #install.packages("stringr")
-install.packages("summarytools")
+#install.packages("summarytools")
 
 library("readr")
 library("dplyr")
@@ -36,15 +36,15 @@ library("summarytools")
 
 ## Obtención y carga de los Datos:
 
-#### Descomprimir el fichero comprimido que contiene los registros del servidor, y a partir de los datos extraídos, cargar en data frame los registros con las peticiones servidas.
+#### Descomprimir el fichero comprimido que contiene los registros del servidor y, a partir de los datos extraídos, cargar en data frame los registros con las peticiones servidas.
 
-Empezamos, por descomprimir el archivo donde se encuentran nuestros datos.
+Empezamos por descomprimir el archivo donde se encuentran nuestros datos.
 ```{r}
 zip <- "./epa-http.zip"
 unzip(zipfile = zip)
 ```
 
-Como estos son logs, podemos usar la función *read_log()* para almacenarlos en formato dataframe (mas adelante se explicara el proceso de limpieza que hemos realizado)
+Como estos son logs, podemos usar la función *read_log()* para almacenarlos en formato dataframe (más adelante se explicará el proceso de limpieza que hemos realizado).
 ```{r}
 columnas <- c("IP", "Timestamp", "Peticion", "CodigoRespuesta", "BytesReply")
 df <- read_log("epa-http.csv", col_names = columnas) %>%
@@ -61,9 +61,9 @@ head(df, 10)
 
 #### Incluid en el documento un apartado con la descripción de los datos analizados: fuente, tipología, descripción de la información contenida (los diferentes campos) y sus valores.
 
-Los logs que estamos analizando se tratan de logs de un servidor que venian comprimidos en un fichero *.zip*, estos los leemos nosotros gracias a que su almacenamiento ha sido realizado mediante un fichero *.csv*.
+Los logs que estamos analizando se tratan de logs de un servidor que venían comprimidos en un fichero *.zip*; estos los leemos nosotros gracias a que su almacenamiento ha sido realizado mediante un fichero *.csv*.
 
-Para tener una primera vision de los datos que hemos cargado y con los que vamos a trabajar, podemos usar la funcion *glimpse()*.
+Para tener una primera visión de los datos que hemos cargado y con los que vamos a trabajar, podemos usar la función *glimpse()*.
 
 ```{r}
 glimpse(df)
@@ -71,27 +71,31 @@ glimpse(df)
 
 Esta nos muestra la siguiente información de nuestro *dataframe*.
 
--   En total nuestro dataframe cuenta con 47,748 columnas.
--   Contamos con 5 columans distintas con el siguiente contenido y tipo de dato:
-    -   **IP (character)**: Se trata de la IP que esta realizando la petición (no tiene por que ser siempre una IP, tambien puede ser el nombre del "Usuario" que quiere acceder a dicho recurso).
-    -   **Timestamp (POSIXct)**: Es la fecha de cuando llego la peticion al servidor.
-    -   **Peticion (character)**: Se trata de la peticion que se esta realizando al servidor.
+-   En total nuestro dataframe cuenta con 47,748 filas.
+-   Contamos con 5 columnas distintas con el siguiente contenido y tipo de dato:
+    -   **IP (character)**: Se trata de la IP que está realizando la petición (no tiene por qué ser siempre una IP, también puede ser el nombre del "Usuario" que quiere acceder a dicho recurso).
+    -   **Timestamp (POSIXct)**: Es la fecha de cuándo llegó la petición al servidor.
+    -   **Peticion (character)**: Se trata de la petición que se está realizando al servidor.
     -   **CodigoRespuesta (double)**: Código que indica el estado de la petición.
-    -   **BytesReply (double)**: Numero de bytes enviados por el servidor para servir la petición.
-    -   **Metodo(Factor)**: Parte de la peticion que indica que su tipo (Hay 3 posibles opciones).
-    -   **URL(Factor)**: Se trata de la URL del recurso al cual se esta accediendo (Hay 6561 distintos).
-    -   **Version_proto(Factor)**: Version del protocolo (Solo hay dos tipos).
+    -   **BytesReply (double)**: Número de bytes enviados por el servidor para servir la petición.
+    -   **Metodo (Factor)**: Parte de la petición que indica su tipo (Hay 3 posibles opciones).
+    -   **URL (Factor)**: Se trata de la URL del recurso al cual se está accediendo (Hay 6561 distintos).
+    -   **Version_proto (Factor)**: Versión del protocolo (Solo hay dos tipos).
 
 ## Limpieza de los Datos
 #### Aprovechando que los datos a analizar son los mismos de la primera práctica, para esta entrega es imprescindible que los datos estén en formato de “datos elegantes”.
-Para tener los datos limpios, hemos realizado distintas correcciones respecto a como estos venian en *crudo*.
--   Con **read_csv()** los datos ya quedan bastante bien estructurados, y se nos crean ya las 5 primeras columnas iniciales que, lo unico que hemos hecho ha sido el cambio de los nombres de esta para poder identificarlo mejor.
--   Como tenemos filas donde encontramos valores de BytesReply nulos (Cuando hay una peticion con codigo de respuesta 404), los tratamos tambien para que no sean NA y los dejamos como 0, ya que al tratarse de un recurso no encontrado, el servidor no manda nada.
--   Luego para las fechas de los logs, las pasamos a un formato de fecha como lo es POSIXct. Este formato nos será util para más adelante ya que nos divide en varias partes las fechas.
+Para tener los datos limpios, hemos realizado distintas correcciones respecto a cómo estos venían en *crudo*.
+-   Con **read_csv()** los datos ya quedan bastante bien estructurados, y se nos crean ya las 5 primeras columnas iniciales; lo único que hemos hecho ha sido el cambio de los nombres de estas para poder identificarlas mejor.
+-   Como tenemos filas donde encontramos valores de BytesReply nulos (cuando hay una petición con código de respuesta 404), los tratamos también para que no sean NA y los dejamos como 0, ya que al tratarse de un recurso no encontrado, el servidor no manda nada.
+-   Luego, para las fechas de los logs, las pasamos a un formato de fecha como lo es POSIXct. Este formato nos será útil para más adelante ya que nos divide en varias partes las fechas.
 -   Finalmente dividimos la columna *Peticion* (conservando esta en nuestro df) en tres columnas nuevas que son **Metodo**, **URL** y **Version_proto** y las almacenamos como Factores.
 
 ## Exploración de Datos
 #### Identificar el número único de usuarios que han interactuado directamente con el servidor de forma segregada según si los usuarios han tenido algún tipo de error en las distintas peticiones ofrecidas por el servidor.
+
+Para conseguir el número de usuarios únicos que han interactuado con el servidor, teniendo en cuenta si han tenido algún tipo de error, lo que hacemos es realizar una búsqueda donde inicialmente filtramos todas aquellas filas de nuestro df donde se encuentre un código de respuesta superior o igual a 400.
+Esto es debido a que los códigos a partir del 400 significan que ha habido errores a la hora de realizar la petición.
+Luego, si hacemos un distinct de las diferentes IPs, encontraremos el nombre de usuarios que han tenido algún tipo de fallo y, para saber el número de usuarios que no han tenido fallos, el resultado será el número de IPs totales que aparecen en nuestro df, menos el número de usuarios que sí han tenido errores.
 
 ```{r}
 usuarios_con_fallos <- df %>% 
@@ -103,16 +107,19 @@ total_usuarios <- length(unique(df$IP))
 
 usuarios_sin_fallos <- total_usuarios - usuarios_con_fallos
 
+cat("El total de usuarios distintos es", total_usuarios, "\n")
+cat("El número de usuarios que han sufrido algún tipo de fallo es",usuarios_con_fallos, "\n")
+cat("El número de usuarios que NO han sufrido ningún tipo de fallo es",usuarios_sin_fallos, "\n")
+```
+Si queremos saber cuáles son estos errores, los podemos obtener filtrando de la misma manera de antes, y haciendo una obtención única de cada uno de los códigos de respuesta que acabamos de filtrar.
+```{r}
 Fallos <- df %>%
   filter(CodigoRespuesta >= 400) %>%  
   distinct(CodigoRespuesta)
-  
-total_usuarios
-usuarios_con_fallos
-usuarios_sin_fallos
 
 Fallos
 ```
+Y aquí tenemos un gráfico donde podemos ver claramente que la cantidad de usuarios que han sufrido algún tipo de error por parte del servidor es muy inferior a los usuarios que no han sufrido ninguno.
 ```{r}
 usuarios_fallos <- data.frame(
   Valor = c("Sin Fallos", "Con Fallos"),
@@ -129,10 +136,15 @@ ggplot(usuarios_fallos, aes(x=Valor, y=Cantidad, fill=Valor)) +
 ## Análisis de Datos
 #### Analizar los distintos tipos de peticiones HTTP (GET, POST, PUT, DELETE) gestionadas por el servidor, identificando la frecuencia de cada una de estas. Repetir el análisis, esta vez filtrando previamente aquellas peticiones correspondientes a recursos ofrecidos de tipo imagen. 
 
+Para obtener la frecuencia de los tipos de peticiones realizados por el servidor podemos usar la función *freq()* que ya nos almacena los datos de manera que podemos tener una visión de la frecuencia de cada una de las peticiones.
+
+En nuestro caso, la petición que más se realiza son los GET (96.38%), seguido de los POST (3.4%) y finalmente tenemos los HEAD (0.22%).
+
 ```{r}
 tabla_freq <- freq(df$Metodo, report.nas = FALSE)
 tabla_freq
 ```
+Aquí podemos observar los resultados obtenidos en formato de *Pie chart*.
 ```{r}
 datos_pie <- as.data.frame(tabla_freq)
 
@@ -148,7 +160,8 @@ ggplot(datos_pie, aes(x = "", y = Freq, fill = Categoria)) +
   theme_void() +
   labs(title = "Distribución de Métodos", fill = "Método")
 ```
-
+Podemos hacer lo mismo pero filtrando inicialmente por todas aquellas peticiones que contengan recursos ofrecidos del tipo imagen.
+Los resultados en este caso varían del análisis con todos los logs. En este caso el porcentaje de GETs aumenta y el de POST disminuye, mientras que los HEADS se mantienen.
 ```{r}
 patron_imagenes <- "(?i)\\.(gif|jpg|jpeg|png|ico|bmp|svg)$"
 df_imagenes <- df %>%
@@ -157,7 +170,7 @@ tabla_freq_img <- freq(df_imagenes$Metodo, report.nas = FALSE)
 tabla_freq_img
 
 ```
-
+Aquí tenemos el respectivo gráfico.
 ```{r}
 datos_pie <- as.data.frame(tabla_freq_img)
 
@@ -176,6 +189,8 @@ ggplot(datos_pie, aes(x = "", y = Freq, fill = Categoria)) +
 ## Visualización de Resultados 
 #### Generar al menos 2 gráficos distintos que permitan visualizar alguna característica relevante de los datos analizados.  
 
+Como gráficos a analizar, teniendo en cuenta que ya hemos mostrado algunos de estos, hemos pensado que podría ser interesante ver cuáles son los recursos que más se solicitan en nuestro servidor, y esto lo hemos logrado con un gráfico de barras ordenado que muestre la cantidad de veces que se solicitan dichos recursos.
+De esta manera, sabemos que el recurso más solicitado de nuestro sistema es el */icons/circle_logo_small.gif*.
 ```{r fig.width=12, fig.height=6}
 top_urls <- df %>%
   count(URL) %>%              
@@ -194,6 +209,7 @@ ggplot(top_urls, aes(x = reorder(str_trunc(URL, 40), n), y = n)) +
   ) +
   geom_text(aes(label = n), hjust = -0.1, size = 3.5)
 ```
+Siguiendo un poco la dinámica anterior, este gráfico muestra cuáles son los usuarios que más peticiones realizan al servidor, por lo tanto, cuáles son los usuarios más activos. En este caso el usuario más activo es *sandy.rtptok1.epa.gov*, aunque lo sigue por poco *e659229.boeing.com*.
 ```{r fig.width=12, fig.height=6}
 top_ips <- df %>%
   count(IP) %>%                 
@@ -207,7 +223,6 @@ ggplot(top_ips, aes(x = reorder(IP, n), y = n)) +
   theme_minimal() +
   labs(
     title = "Top 10 Usuarios más Activos (IPs)",
-    subtitle = "Identificación de posibles bots o proxies con alto tráfico",
     x = "Dirección IP (Usuario)",
     y = "Número de Peticiones"
   ) +
@@ -215,11 +230,15 @@ ggplot(top_ips, aes(x = reorder(IP, n), y = n)) +
 ```
 
 #### Generar un gráfico que permita visualizar el número de peticiones servidas a lo largo del tiempo.
+Para generar el gráfico, primero creamos una columna donde se almacenará la hora donde se produjo la petición. Luego almacenaremos el conteo de peticiones según la hora.
 ```{r}
 peticiones_por_tiempo <- df %>%
   mutate(Hora = floor_date(Timestamp, unit = "hour")) %>% 
   count(Hora)
+```
 
+Hemos decidido generar dos gráficos distintos que muestran la misma información, pero de distinta manera. En este primero tenemos un gráfico con líneas y puntos, donde los puntos son el recuento de peticiones por hora y las líneas nos muestran cómo suben y bajan las peticiones a lo largo del día.
+```{r}
 ggplot(peticiones_por_tiempo, aes(x = Hora, y = n)) +
   geom_line(color = "#0073C2", linewidth = 1) + 
   geom_point(color = "#0073C2", size = 2) +
@@ -232,6 +251,7 @@ ggplot(peticiones_por_tiempo, aes(x = Hora, y = n)) +
   ) +
   scale_x_datetime(date_labels = "%d %b %H:00", date_breaks = "4 hours")
 ```
+En este segundo gráfico, se muestra lo mismo, pero en forma de histograma, donde el cálculo de los valores lo hace *ggplot()*.
 ```{r}
 ggplot(df, aes(x = Timestamp)) +
   geom_histogram(binwidth = 3600, fill = "#0073C2", color = "white") + 
@@ -246,9 +266,11 @@ ggplot(df, aes(x = Timestamp)) +
 ```
 
 
-## Clústering de datos
-#### Utilizando un algoritmo de aprendizaje no supervisado, realizad un análisis de clústering con k-means para los datos del servidor. 
+## Clustering de datos
+#### Utilizando un algoritmo de aprendizaje no supervisado, realizad un análisis de clustering con k-means para los datos del servidor. 
 
+Para usar el K-means, necesitamos usar solamente variables numéricas, ya que dicho algoritmo usa estas variables para el cálculo de las distancias.
+Podemos cambiar alguna de las columnas categóricas que están almacenadas como *Factor* usando el *one hot encoding*, que crea una columna para cada valor del factor, y si a esa fila le corresponde ese valor, se marca como 1, en caso contrario 0.
 ```{r}
 df <- df %>% 
   mutate(Sum_char_peticion = nchar(Peticion), Sum_char_ip = nchar(IP))
@@ -262,14 +284,7 @@ epa_http_one_hot$Timestamp <- NULL
 epa_http_one_hot$Peticion <- NULL
 ```
 
-```{r}
-#clusters_h <- hclust(dist(df))
-```
-
-```{r}
-#plot(clusters_h)
-```
-
+Hicimos unas cuantas ejecuciones de k-means cambiando el número de k que usábamos, y el resultado que más nos gustó fue con *k=3*.
 ```{r}
 #num_cluster <- 2
 #result <- kmeans(epa_http_one_hot, centers = num_cluster, nstart = 25)
@@ -284,6 +299,7 @@ result_no_na <- kmeans(na.omit(epa_http_one_hot), centers = num_cluster)
 #result_no_na <- kmeans(na.omit(epa_http_one_hot), centers = num_cluster)
 ```
 
+Para poder ver los distintos grupos, realizamos una gráfica donde hacemos un factor de Colors que nos permitirá ver visualmente los grupos que se han formado.
 ```{r}
 Colors = as.factor(result$cluster)
 
@@ -297,7 +313,8 @@ ggplot(epa_http_one_hot, aes(x = Sum_char_ip, y = BytesReply, color = Colors)) +
     color = "Cluster"
   )
 ```
-
+Si analizamos los gráficos vemos que, en la mayoría de ellos, se ve muy claramente que cuando se tiene en cuenta los *BytesReply*, es cuando mejor vemos que se forman los grupos, y eso puede significar que esta variable es la más significativa por la cual se forman los grupos.
+Esto se debe a que la diferencia de valores distintos que hay en esta variable es mucho mayor que en las otras variables, por lo que las distancias son más significativas.
 ```{r}
 # Variables continuas principales (ajusta nombres según tus columnas reales)
 vars_interesantes <- c("BytesReply", "Sum_char_ip", "Sum_char_peticion", "CodigoRespuesta")
@@ -323,4 +340,3 @@ for (var_x in vars_interesantes) {
   }
 }
 ```
-
